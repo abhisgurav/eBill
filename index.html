@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Invoice Generator</title>
+  <link rel="stylesheet" href="CSS/style.css">
+</head>
+<body>
+<div class="container">
+  <div class="upload-area">
+    <label for="logoInput">Upload Company Logo:</label>
+    <input type="file" id="logoInput" accept="image/*" onchange="loadLogo(event)">
+  </div>
+
+  <div class="header-lines-input">
+    <label for="lineCount">How many header lines?</label>
+    <select id="lineCount" onchange="showHeaderInputs()">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
+
+    <div id="headerInputs">
+      <input type="text" id="line1" placeholder="Header Line 1" oninput="updateHeaderLines()" />
+      <input type="text" id="line2" placeholder="Header Line 2" oninput="updateHeaderLines()" />
+      <input type="text" id="line3" placeholder="Header Line 3" oninput="updateHeaderLines()" />
+      <input type="text" id="line4" placeholder="Header Line 4" oninput="updateHeaderLines()" />
+      <input type="text" id="line5" placeholder="Header Line 5" oninput="updateHeaderLines()" />
+    </div>
+  </div>
+
+  <div class="gst-toggle">
+    <label>
+      <input type="checkbox" id="isGstEnabled" onchange="toggleGstFields()" />
+      Generate GST Invoice
+    </label>
+  </div>
+
+  <div id="gstNumberSection" style="display: none;">
+    <label for="gstNumber">GST Number:</label>
+    <input type="text" id="gstNumber" placeholder="Enter GST Number" oninput="validateGstLive()" />
+    <small id="gstError">Invalid GST Number</small>
+  </div>
+  <button class="add-btn" onclick="addItem()">➕ Add Item</button>
+
+  <div id="invoice" class="invoice">
+
+    <!-- Auto Date here -->
+    <div id="invoiceDate"></div>
+
+    <div class="invoice-header">
+      <img id="logoPreview" class="logo" alt="Logo" />
+      <div class="header-wrapper">
+        <div id="headerLinesPreview" class="header-lines-preview" style="text-align: center;"></div>
+        <div id="gstNumberDisplay" style="margin-top: 5px; font-weight: bold; display: none;"></div>
+      </div>
+    </div>
+
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Price (₹)</th>
+          <th class="gst-field" style="display:none;">CGST %</th>
+          <th class="gst-field" style="display:none;">SGST %</th>
+          <th>Total (₹)</th>
+          <th class="no-print"></th> 
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+
+    <div class="totals">
+      <p class="gst-field" style="display:none;"><strong>Total CGST:</strong> ₹<span id="cgstTotal">0.00</span></p>
+      <p class="gst-field" style="display:none;"><strong>Total SGST:</strong> ₹<span id="sgstTotal">0.00</span></p>
+      <p><strong class="grand">Grand Total:</strong> ₹<span id="grandTotal">0.00</span></p>
+    </div>
+
+    <div class="hallmark">✅ Digitally Verified by <strong>Hallmark eBilling</strong></div>
+  </div>
+
+  <button id="finalizeBtn" class="finalize-btn" onclick="finalizeItems()">✔️ Finalize Items</button>
+  <button id="pdfBtn" class="pdf-btn" onclick="downloadInvoice()">📄 Download PDF</button>
+</div>
+
+<script src="JS/html2pdf.js"></script>
+<script src="JS/script.js"></script>
+</body>
+</html>
