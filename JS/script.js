@@ -1,7 +1,9 @@
 function loadLogo(event) {
   const reader = new FileReader();
   reader.onload = e => document.getElementById("logoPreview").src = e.target.result;
-  reader.readAsDataURL(event.target.files[0]);
+  if(event.target.files[0]) {
+    reader.readAsDataURL(event.target.files[0]);
+  }
 }
 
 function showHeaderInputs() {
@@ -18,35 +20,41 @@ function updateHeaderLines() {
   let lines = [];
   for (let i = 1; i <= 5; i++) {
     const input = document.getElementById('line' + i);
-    if (input.style.display !== 'none' && input.value.trim()) {
+    if (input && input.style.display !== 'none' && input.value.trim()) {
       lines.push(input.value.trim());
     }
   }
-const hallmarkElement = document.querySelector('.hallmark strong');
-
+  const hallmarkElement = document.querySelector('.hallmark strong');
   const previewContainer = document.getElementById('headerLinesPreview');
+  
   if (lines.length > 0) {
     let html = `<div style="text-align: center;">`;
     html += `<div style="font-weight:bold; font-size: 20px;">${lines[0]}</div>`;
     html += lines.slice(1).map(line => `<div>${line}</div>`).join('');
     html += `</div>`;
     previewContainer.innerHTML = html;
-    hallmarkElement.textContent = lines[0];
-    
+    if(hallmarkElement) hallmarkElement.textContent = lines[0];
   } else {
     previewContainer.innerHTML = '';
   }
 }
 
-
 function toggleGstFields() {
   const isGst = document.getElementById("isGstEnabled").checked;
   document.getElementById("gstNumberSection").style.display = isGst ? 'block' : 'none';
 
+  // Toggle visible elements in headers and footers (Calculations section)
   const gstFields = document.querySelectorAll('.gst-field');
-  gstFields.forEach(el => el.style.display = isGst ? 'table-cell' : 'none');
+  gstFields.forEach(el => el.style.display = isGst ? '' : 'none');
 
-  // Show or hide GST number in invoice preview
+  // Toggle dynamically generated table row column cells
+  const cgstCells = document.querySelectorAll('.cgst-cell');
+  const sgstCells = document.querySelectorAll('.sgst-cell');
+  
+  cgstCells.forEach(el => el.style.display = isGst ? '' : 'none');
+  sgstCells.forEach(el => el.style.display = isGst ? '' : 'none');
+
+  // Update GST number preview
   const gstDisplay = document.getElementById('gstNumberDisplay');
   if (isGst) {
     gstDisplay.style.display = 'block';
@@ -59,7 +67,7 @@ function toggleGstFields() {
   calculateInvoice();
 }
 
-// Add this after your other functions, so it updates live on input:
+// Update GST live on input
 document.getElementById('gstNumber').addEventListener('input', function() {
   const gstDisplay = document.getElementById('gstNumberDisplay');
   if (document.getElementById('isGstEnabled').checked) {
@@ -67,22 +75,19 @@ document.getElementById('gstNumber').addEventListener('input', function() {
   }
 });
 
-
 function addItem() {
   const isGst = document.getElementById("isGstEnabled").checked;
   const row = document.createElement('tr');
 
+  // Explicitly assign cgst-cell and sgst-cell to allow toggle dynamic bindings
   row.innerHTML = `
     <td><input type="text" placeholder="Item Name"></td>
     <td><input type="number" value="1" min="1" class="qty" oninput="calculateInvoice()"></td>
     <td><input type="number" value="0" min="0" class="rate" oninput="calculateInvoice()"></td>
-    ${isGst ? `
-      <td><input type="number" value="9" class="cgst" oninput="calculateInvoice()"></td>
-      <td><input type="number" value="9" class="sgst" oninput="calculateInvoice()"></td>
-    ` : `
-    `}
+    <td class="cgst-cell" style="display: ${isGst ? '' : 'none'};"><input type="number" value="18" class="cgst" oninput="calculateInvoice()"></td>
+    <td class="sgst-cell" style="display: ${isGst ? '' : 'none'};"><input type="number" value="18" class="sgst" oninput="calculateInvoice()"></td>
     <td class="total">0.00</td>
-    <td class="no-print"><button  onclick="this.closest('tr').remove(); calculateInvoice()">❌</button></td>
+    <td class="no-print"><button onclick="this.closest('tr').remove(); calculateInvoice()">❌</button></td>
   `;
 
   document.getElementById("itemsBody").appendChild(row);
@@ -91,22 +96,16 @@ function addItem() {
 
 function finalizeItems() {
   if (confirm("Are you sure you want to finalize the items? You won't be able to edit after this.")) {
-    // Hide finalize button
     document.getElementById('finalizeBtn').style.display = 'none';
-
-    // Show PDF download button
     document.getElementById('pdfBtn').style.display = 'block';
 
-    // Disable all inputs and buttons in the invoice table
     const inputs = document.querySelectorAll('#itemsBody input');
     inputs.forEach(input => input.disabled = true);
 
-    // Hide all remove buttons
     const removeButtons = document.querySelectorAll('#itemsBody button');
     removeButtons.forEach(btn => btn.style.display = 'none');
 
-    // Also disable Add Item button and GST toggle, logo input, header inputs
-    document.querySelector('.add-btn').disabled = true;  // Add Item button
+    document.querySelector('.add-btn').disabled = true;
     document.getElementById('isGstEnabled').disabled = true;
     document.getElementById('logoInput').disabled = true;
 
@@ -154,13 +153,11 @@ function validateGstLive() {
   const gstInput = document.getElementById('gstNumber');
   const errorMsg = document.getElementById('gstError');
   const gst = gstInput.value.trim();
-  // GST regex case-insensitive
   const regex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i;
 
   if (gst === "") {
     errorMsg.style.display = 'none';
-    gstInput.classList.remove('invalid');
-    gstInput.classList.remove('valid');
+    gstInput.classList.remove('invalid', 'valid');
     return true;
   }
 
@@ -184,15 +181,13 @@ function downloadInvoice() {
   }
 
   const preview = document.getElementById("logoPreview");
-   if (preview.src =='') {
+  if (!preview.src || preview.getAttribute('src') === '') {
     preview.style.display = "none";
-   }  
+  }  
 
-  // 🔴 Temporarily hide delete buttons/column before generating PDF
   const noPrintElements = document.querySelectorAll('.no-print');
   noPrintElements.forEach(el => el.style.display = 'none');
 
-  // ✅ Generate PDF
   html2pdf().from(document.getElementById("invoice")).set({
     margin: 0.5,
     filename: 'smart-invoice.pdf',
@@ -200,12 +195,10 @@ function downloadInvoice() {
     html2canvas: { scale: 2 },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   }).save().then(() => {
-    // ✅ Show them back after save completes
     noPrintElements.forEach(el => el.style.display = '');
   });
 }
 
-// Set auto date on page load
 document.addEventListener("DOMContentLoaded", function () {
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-IN', {
@@ -214,7 +207,5 @@ document.addEventListener("DOMContentLoaded", function () {
     day: 'numeric'
   });
   document.getElementById('invoiceDate').textContent = `Date: ${formattedDate}`;
-
-  // Initially show header inputs according to default select value
   showHeaderInputs();
 });
